@@ -1,33 +1,47 @@
-"""
-validate_email, EmailNotValidError: 이메일 주소 형식 체크용
-Flask: flask 클래스를 import 
-render_template: 기본 템플릿 엔진: Jinja2를 사용하여 HTML을 렌더링
-url_for: endpoint의 url 이용
-current_app: 애플리케이션 컨텍스트 - 액티브 앱의 인스턴스 
-g: 애플리케이션 컨텍스트 - 요청을 통해 이용 가능한 전역 임시 영역. 요청마다 리셋
-request: 요청 컨텍스트 - 요청이 있는 동안 요청 레벨의 데이터 이용 가능 = 요청 정보 취득
-redirect: 다른 엔드포인트로 리다이렉트하려면 redirect 함수를 사용합니다.
-	import 문이 길어지기 때문에 줄바꿈
-flash: 동작 실행 후 간단한 메시지를 표시하는 기능.
-	1. flash 함수 설정
-	2. 템플릿에서 get_flashed_messages 함수 사용해 취득하여 표시
-	3. Flash 메시지를 이용하려면 세션(정보를 서버에 유지 + 일련의 처리를 계속 실시)이 필요하므로 config의 SECRET_KEY 설정 필요
-"""
-from email_validator import validate_email, EmailNotValidError
 from flask import (
+	# Flask: flask 클래스를 import 
 	Flask, 
+	# render_template: 기본 템플릿 엔진: Jinja2를 사용하여 HTML을 렌더링
 	render_template, 
+	# url_for: endpoint의 url 이용
 	url_for, 
+	# current_app: 애플리케이션 컨텍스트 - 액티브 앱의 인스턴스 
 	current_app, 
+	# g: 애플리케이션 컨텍스트 - 요청을 통해 이용 가능한 전역 임시 영역. 요청마다 리셋
 	g, 
+	# request: 요청 컨텍스트 - 요청이 있는 동안 요청 레벨의 데이터 이용 가능 = 요청 정보 취득
 	request, 
+	# redirect: 다른 엔드포인트로 리다이렉트하려면 redirect 함수를 사용합니다.
 	redirect, 
+	# flash: 동작 실행 후 간단한 메시지를 표시하는 기능.
+	# 1. flash 함수 설정
+	# 2. 템플릿에서 get_flashed_messages 함수 사용해 취득하여 표시
+	# 3. Flash 메시지를 이용하려면 세션(정보를 서버에 유지 + 일련의 처리를 계속 실시)이 필요하므로 config의 SECRET_KEY 설정 필요
 	flash,
 ) 
+# validate_email, EmailNotValidError: 이메일 주소 형식 체크용
+from email_validator import validate_email, EmailNotValidError
+# logging: 앱의 동작 상황을 콘솔이나 파일에 출력. 로그 레벨: DEBUG < INFO < WARNING < ERROR < CRITICAL
+import logging
+# flask_debugtoolbar: HTTP 요청 정보나 flask routes 결과, 데이터베이스가 발행하는 SQL을 브라우저에서 확인 가능 
+from flask_debugtoolbar import DebugToolbarExtension
+# 환경 변수를 취득하기 위함.
+import os
+# Mail 클래스
+from flask_mail import Mail
 
 
 # flask 클래스를 인스턴스화한다.
 app = Flask(__name__)
+# 세션 정보 보안을 위해 SECRET_KEY를 추가한다.
+app.config["SECRET_KEY"] = "2AZSMss3p5QPbcY2hBsJ"
+# 로그 레벨을 설정한다.
+app.logger.setLevel(logging.DEBUG)
+# 리다이렉트를 중단하지 않도록 config 설정.
+# 리다이렉트를 하면 요청한 값을 flask-debugtoolbar에서 확인 불가능 -> default: True(리다이렉트 중단)
+app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False
+# DebugToolbarExtension에 애플리케이션을 설정한다.
+toolbar = DebugToolbarExtension(app)
 
 
 # URL과 실행할 함수를 매핑한다.
@@ -103,7 +117,7 @@ def contact_complete():
 		# 입력 체크
 		is_valid = True
 
-
+		# 입력란 비어 있으면 flash에 오류 메시지 설정
 		if not username:
 			flash("사용자명은 필수입니다.")
 			is_valid = False
@@ -133,8 +147,6 @@ def contact_complete():
 
 		# 문의 완료 엔드포인트로 리다이렉트 한다.
 		flash("문의해 주셔서 감사합니다.")
-
-
 		# POST의 경우, 문의 완료 엔드포인트를 contact 엔드포인트로 리다이렉트 한다.
 		return redirect(url_for("contact_complete"))
 	
@@ -142,7 +154,14 @@ def contact_complete():
 	return render_template("contact_complete.html")
 
 
+	# Mail 클래스의 config를 환경 변수로부터 추가한다.
+	app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER")
+	app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
+	app.config["MAIL_USE_TLS"] = os.environ.get("MAIL_USE_TLS")
+	app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
+	app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+	app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("MAIL_DEFAULT_SENDER")
 
-app = Flask(__name__)
-# SECRET_KEY를 추가한다.
-app.config["SECRET_KEY"] = "2AZSMss3p5QPbcY2hBsJ"
+
+	# flask-mail 확장을 앱에 등록한다.
+	mail = Mail(app)

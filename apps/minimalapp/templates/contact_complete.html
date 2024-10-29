@@ -11,5 +11,17 @@
 
     <body>
         <h2>문의 완료</h2>
+
+        <!-- 
+        flash에 설정한 오류 메시지를 문의 폼에서 취득하기 위해 get_flashed_messages 함수 사용
+        messages 변수의 이용 가능한 범위를 with 문장 안에서만 한정할 수 있다. 
+        -->
+        {% with messages = get_flashed_messages() %} {% if messages %}
+        <ul>
+            {% for message in messages %}
+            <li class="flash">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %} {% endwith %}
     </body>
 </html>
